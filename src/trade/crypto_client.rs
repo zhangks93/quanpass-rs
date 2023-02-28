@@ -17,7 +17,7 @@ impl CryptoClient {
     }
 
     pub fn limit_buy(&self, symbol: &str, quantity: f32, price: f64) {
-        match binance_client.limit_buy(symbol, quantity, price) {
+        match self.binance_client.limit_buy(symbol, quantity, price) {
             Ok(answer) => println!("{:?}", answer),
             Err(e) => println!("Error: {:?}", e),
         }
