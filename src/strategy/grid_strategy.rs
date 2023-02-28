@@ -37,7 +37,6 @@ impl Strategy for GridStrategy {
         self.crypto_client.limit_buy(self.symbol.as_str(), *quantity, (current_price * (1.0 - gap) * 100000.0).round() / 100000.0);
         self.crypto_client.limit_sell(self.symbol.as_str(), *quantity, (current_price * (1.0 + gap) * 100000.0).round() / 100000.0);
 
-
         println!(" {:?}", current_price);
     }
 }

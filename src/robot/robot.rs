@@ -25,12 +25,12 @@ impl Robot {
         self.strategy.excute();
     }
 
-    pub fn append(robot: Robot) {
+    pub fn append(robot: Robot, schedule: &str) {
         unsafe {
             MANAGER
                 .lock()
                 .unwrap()
-                .add(Job::new("1/10 * * * * *".parse().unwrap(), move || {
+                .add(Job::new(schedule.parse().unwrap(), move || {
                     robot.excute();
                 }));
         }
