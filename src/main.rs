@@ -16,7 +16,7 @@ async fn main() {
     let mut params = HashMap::new();
     params.insert(String::from("quantity"), 130.0_f32);
     params.insert(String::from("gap"), 0.0008_f32);
-    Robot::append(Robot::new(String::from("Jack"), String::from("Grid"), String::from("DOGEBUSD"), params), "*/2 * * * *");
+    Robot::append(Robot::new(String::from("Jack"), String::from("Grid"), String::from("DOGEBUSD"), params), "0 1/2 * * * *");
     // trade::crypto_client::CryptoClient::new().limit_buy("DOGEBUSD", 150.0, 0.08158);
 
     loop {
