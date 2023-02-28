@@ -5,6 +5,7 @@ mod strategy;
 mod util;
 mod trade;
 
+use std::collections::HashMap;
 use std::time::Duration;
 
 use robot::robot::Robot;
@@ -12,8 +13,11 @@ use robot::robot::MANAGER;
 
 #[tokio::main]
 async fn main() {
-    Robot::append(Robot::new(String::from("Jack"), String::from("Grid")));
-    trade::crypto_client::CryptoClient::new().limit_buy("DOGEBUSD", 150.0, 0.08158);
+    let mut params = HashMap::new();
+    params.insert(String::from("quantity"), 135.0_f32);
+    params.insert(String::from("gap"), 0.0007_f32);
+    Robot::append(Robot::new(String::from("Jack"), String::from("Grid"), String::from("DOGEBUSD"), params));
+    // trade::crypto_client::CryptoClient::new().limit_buy("DOGEBUSD", 150.0, 0.08158);
 
     loop {
         unsafe {

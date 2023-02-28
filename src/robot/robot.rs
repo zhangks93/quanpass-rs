@@ -2,7 +2,7 @@ use crate::strategy::strategy::{Strategy, StrategyFactory};
 use job_scheduler::{Job, JobScheduler};
 use crate::util::string_util::generate_random_id;
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use std::{sync::Mutex, collections::HashMap};
 
 pub static mut MANAGER: Lazy<Mutex<JobScheduler>> = Lazy::new(|| Mutex::new(JobScheduler::new()));
 
@@ -13,11 +13,11 @@ pub struct Robot {
 }
 
 impl Robot {
-    pub fn new(name: String, strategy: String) -> Robot {
+    pub fn new(name: String, strategy: String, symbol: String, params: HashMap<String, f32>) -> Robot {
         Robot {
             id: generate_random_id(),
             name: name,
-            strategy: StrategyFactory::new().create_strategy(&strategy),
+            strategy: StrategyFactory::new().create_strategy(&strategy, symbol, params),
         }
     }
 

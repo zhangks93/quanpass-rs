@@ -23,5 +23,12 @@ impl CryptoClient {
         }
     }
 
+    pub fn limit_sell(&self, symbol: &str, quantity: f32, price: f64) {
+        match self.binance_client.limit_sell(symbol, quantity, price) {
+            Ok(answer) => println!("{:?}", answer),
+            Err(e) => println!("Error: {:?}", e),
+        }
+    }
+
     
 }
