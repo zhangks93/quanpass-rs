@@ -1,2 +1,2 @@
-pub mod contract_client;
+pub mod futures_client;
 pub mod crypto_client;

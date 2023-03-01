@@ -16,17 +16,18 @@ impl CryptoClient {
         }
     }
 
-    pub fn limit_buy(&self, symbol: &str, quantity: f32, price: f64) {
+    pub fn limit_buy(&self, symbol: &str, quantity: f32, price: f64) -> bool {
         match self.binance_client.limit_buy(symbol, quantity, price) {
-            Ok(answer) => println!("{:?}", answer),
-            Err(e) => {println!("Error: {:?}", e); return },
+            Ok(_) => {return true},
+            Err(e) => {println!("Error: {:?}", e); return false},
         }
     }
 
-    pub fn limit_sell(&self, symbol: &str, quantity: f32, price: f64) {
+    pub fn limit_sell(&self, symbol: &str, quantity: f32, price: f64) -> bool {
+        
         match self.binance_client.limit_sell(symbol, quantity, price) {
-            Ok(answer) => println!("{:?}", answer),
-            Err(e) => {println!("Error: {:?}", e); return },
+            Ok(_) => {return true},
+            Err(e) => {println!("Error: {:?}", e); return false},
         }
     }
 
