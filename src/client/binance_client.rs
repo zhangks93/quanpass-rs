@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use anyhow::{bail, Error, Result};
 
-use anyhow::bail;
-use crate::util::binance_error::{BinanceContentError, ErrorKind, Result};
 use hex::encode as hex_encode;
 use hmac::{Hmac, Mac};
 use reqwest::blocking::Response;
@@ -45,7 +44,7 @@ impl Client {
             .headers(self.build_headers(true)?)
             .send()?;
 
-        self.handler(response)
+        self.handler(response).unwrap()
     }
 
     pub fn post_signed<T: DeserializeOwned>(&self, endpoint: String, request: String) -> Result<T> {
@@ -56,23 +55,10 @@ impl Client {
             .headers(self.build_headers(true)?)
             .send()?;
 
-        self.handler(response)
+        self.handler(response).unwrap()
     }
 
-    pub fn delete_signed<T: DeserializeOwned>(
-        &self,
-        endpoint: String,
-        request: Option<String>,
-    ) -> Result<T> {
-        let url = self.sign_request(endpoint, request);
-        let client = &self.inner_client;
-        let response = client
-            .delete(url.as_str())
-            .headers(self.build_headers(true)?)
-            .send()?;
-
-        self.handler(response)
-    }
+    
 
     pub fn get<T: DeserializeOwned>(&self, endpoint: String, request: Option<String>) -> Result<T> {
         let mut url: String = format!("{}{}", self.host, String::from(endpoint));
@@ -85,48 +71,10 @@ impl Client {
         let client = &self.inner_client;
         let response = client.get(url.as_str()).send()?;
 
-        self.handler(response)
+        self.handler(response).unwrap()
     }
 
-    pub fn post<T: DeserializeOwned>(&self, endpoint: String) -> Result<T> {
-        let url: String = format!("{}{}", self.host, String::from(endpoint));
-
-        let client = &self.inner_client;
-        let response = client
-            .post(url.as_str())
-            .headers(self.build_headers(false)?)
-            .send()?;
-
-        self.handler(response)
-    }
-
-    pub fn put<T: DeserializeOwned>(&self, endpoint: String, listen_key: &str) -> Result<T> {
-        let url: String = format!("{}{}", self.host, String::from(endpoint));
-        let data: String = format!("listenKey={}", listen_key);
-
-        let client = &self.inner_client;
-        let response = client
-            .put(url.as_str())
-            .headers(self.build_headers(false)?)
-            .body(data)
-            .send()?;
-
-        self.handler(response)
-    }
-
-    pub fn delete<T: DeserializeOwned>(&self, endpoint: String, listen_key: &str) -> Result<T> {
-        let url: String = format!("{}{}", self.host, String::from(endpoint));
-        let data: String = format!("listenKey={}", listen_key);
-
-        let client = &self.inner_client;
-        let response = client
-            .delete(url.as_str())
-            .headers(self.build_headers(false)?)
-            .body(data)
-            .send()?;
-
-        self.handler(response)
-    }
+    
 
     // Request must be signed
     fn sign_request(&self, endpoint: String, request: Option<String>) -> String {
@@ -145,7 +93,7 @@ impl Client {
         }
     }
 
-    fn build_headers(&self, content_type: bool) -> Result<HeaderMap> {
+    fn build_headers(&self, content_type: bool) -> HeaderMap {
         let mut custom_headers = HeaderMap::new();
 
         custom_headers.insert(USER_AGENT, HeaderValue::from_static("binance-rs"));
@@ -160,7 +108,7 @@ impl Client {
             HeaderValue::from_str(self.api_key.as_str())?,
         );
 
-        Ok(custom_headers)
+        custom_headers
     }
 
     fn handler<T: DeserializeOwned>(&self, response: Response) -> Result<T> {
@@ -176,12 +124,7 @@ impl Client {
                 bail!("Unauthorized");
             }
             StatusCode::BAD_REQUEST => {
-                let error: BinanceContentError = response.json()?;
-
-                Err(ErrorKind::BinanceError(error).into())
-            }
-            s => {
-                bail!(format!("Received response: {:?}", s));
+               bail!("Bad request");
             }
         }
     }
@@ -189,22 +132,20 @@ impl Client {
 
 pub fn build_signed_request(
     parameters: BTreeMap<String, String>, recv_window: u64,
-) -> Result<String> {
+) -> String {
     build_signed_request_custom(parameters, recv_window, SystemTime::now())
 }
 
 pub fn build_signed_request_custom(
     mut parameters: BTreeMap<String, String>, recv_window: u64, start: SystemTime,
-) -> Result<String> {
+) -> String {
     if recv_window > 0 {
         parameters.insert("recvWindow".into(), recv_window.to_string());
     }
-    if let Ok(timestamp) = get_timestamp(start) {
-        parameters.insert("timestamp".into(), timestamp.to_string());
-        return Ok(build_request(parameters));
+    let timestamp = get_timestamp(start);
+    parameters.insert("timestamp".into(), timestamp.to_string());
+    build_request(parameters)
     }
-    bail!("Failed to get timestamp")
-}
 
 pub fn build_request(parameters: BTreeMap<String, String>) -> String {
     let mut request = String::new();
@@ -216,9 +157,9 @@ pub fn build_request(parameters: BTreeMap<String, String>) -> String {
     request
 }
 
-fn get_timestamp(start: SystemTime) -> Result<u64> {
+fn get_timestamp(start: SystemTime) -> u64 {
     let since_epoch = start.duration_since(UNIX_EPOCH)?;
-    Ok(since_epoch.as_secs() * 1000 + u64::from(since_epoch.subsec_nanos()) / 1_000_000)
+    since_epoch.as_secs() * 1000 + u64::from(since_epoch.subsec_nanos()) / 1_000_000
 }
 
 
@@ -234,7 +175,7 @@ mod tests {
         let secret_key =
             Some("LJjVjovJ1oaGowqPE0dRQBFIH9NIxI14Fsq4RTi3NWjFWHQf3yZaEMnkqywW8FIB".into());
         let client = Client::new(api_key, secret_key, String::from("https://fapi.binance.com"))
-        client.get_signed(endpoint, request)
+        client.get_signed(String::from("/fapi/v1/ticker/24hr"), None);
 
     }
 }
