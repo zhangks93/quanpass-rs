@@ -148,7 +148,7 @@ mod tests {
         let host = String::from("https://fapi.binance.com");
         let binance = Binance::new(api_key, secret_key, host);
 
-        let request = build_signed_request(BTreeMap::new(), 100).unwrap();
+        let request = build_signed_request(BTreeMap::new(), 1000).unwrap();
         let result = binance
             .get_signed("/fapi/v2/account".to_owned(), Some(request))
             .unwrap();
