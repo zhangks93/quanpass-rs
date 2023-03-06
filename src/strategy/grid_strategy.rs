@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use chrono::{Utc};
 
 use crate::strategy::strategy::Strategy;
 use crate::trade::crypto_client::CryptoClient;
@@ -32,17 +33,17 @@ impl Strategy for GridStrategy {
 
         let current_price = market.get_price(self.symbol.as_str()).unwrap().price;
 
-        self.crypto_client.limit_buy(
+        let buy_result = self.crypto_client.limit_buy(
             self.symbol.as_str(),
             *quantity,
             (current_price * (1.0 - gap) * 100000.0).round() / 100000.0,
         );
-        self.crypto_client.limit_sell(
+        let sell_result = self.crypto_client.limit_sell(
             self.symbol.as_str(),
             *quantity,
             (current_price * (1.0 + gap) * 100000.0).round() / 100000.0,
         );
 
-        println!(" {:?}", current_price);
+        println!(" 【{}】Price is {}, buy result is  {} and sell result is  {}", Utc::now(), current_price, buy_result, sell_result);
     }
 }
