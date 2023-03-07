@@ -26,7 +26,7 @@ async fn main() {
         unsafe {
             MANAGER.lock().unwrap().tick();
             println!("{:?}", MANAGER.lock().unwrap().time_till_next_job());
-            println!("{:?}", MANAGER.lock().unwrap());
+            
             
             
         }
