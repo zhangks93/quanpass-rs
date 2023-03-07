@@ -25,9 +25,11 @@ async fn main() {
     loop {
         unsafe {
             MANAGER.lock().unwrap().tick();
+            println("MANAGER TICK");
             
         }
         std::thread::sleep(Duration::from_millis(5000));
+        println("Sleep 5 Seconds!");
         
     }
 }
