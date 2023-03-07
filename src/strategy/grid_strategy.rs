@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use binance::model::Order;
 use chrono::{Utc};
 
 use crate::strategy::strategy::Strategy;
@@ -30,8 +31,18 @@ impl Strategy for GridStrategy {
         let market: Market = Binance::new(None, None);
         let gap = self.params.get("gap").unwrap().to_f64().unwrap();
         let quantity = self.params.get("quantity").unwrap();
+        let mut current_price = 0.0;
 
-        let current_price = market.get_price(self.symbol.as_str()).unwrap().price;
+        match market.get_price(self.symbol.as_str()) {
+            Ok(result) => current_price = result.price,
+            Err(_) => {println!("Network Error"); return} 
+        }
+
+        let order_list = self.crypto_client.open_orders();
+        
+        // clear open orders created 2 hours ago
+        // todo
+        order_list.iter().for_each(|e| println!("{:?}", e));
 
         let buy_result = self.crypto_client.limit_buy(
             self.symbol.as_str(),

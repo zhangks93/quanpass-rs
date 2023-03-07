@@ -31,5 +31,12 @@ impl CryptoClient {
         }
     }
 
+    pub fn open_orders(&self) -> Vec<binance::model::Order> {
+        match self.binance_client.get_all_open_orders() {
+            Ok(result) => result,
+            Err(_) => Vec::new(),
+        }
+    }
+
     
 }
