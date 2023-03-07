@@ -42,7 +42,7 @@ impl Strategy for GridStrategy {
         
         // clear open orders created 2 hours ago
         // todo
-        order_list.iter().for_each(|e| println!("{:?}", e));
+        // order_list.iter().for_each(|e| println!("{:?}", e));
 
         let buy_result = self.crypto_client.limit_buy(
             self.symbol.as_str(),

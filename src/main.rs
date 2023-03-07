@@ -25,7 +25,9 @@ async fn main() {
     loop {
         unsafe {
             MANAGER.lock().unwrap().tick();
-            println!("MANAGER TICK");
+            println!("{:?}", MANAGER.lock().unwrap().time_till_next_job());
+            println!("{:?}", MANAGER.lock().unwrap());
+            
             
         }
         std::thread::sleep(Duration::from_millis(5000));
