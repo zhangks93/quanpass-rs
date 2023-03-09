@@ -28,6 +28,7 @@ impl GridStrategy {
 
 impl Strategy for GridStrategy {
     fn excute(&self) {
+        println!("EXCUTION BEGIN!");
         let market: Market = Binance::new(None, None);
         let gap = self.params.get("gap").unwrap().to_f64().unwrap();
         let quantity = self.params.get("quantity").unwrap();
