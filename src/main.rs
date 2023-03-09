@@ -12,8 +12,8 @@ use std::time::Duration;
 use robot::robot::Robot;
 use robot::robot::MANAGER;
 
-#[tokio::main]
-async fn main() {
+
+fn main() {
 
     let mut params = HashMap::new();
     params.insert(String::from("quantity"), 150.0_f32);
