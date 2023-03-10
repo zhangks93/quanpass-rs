@@ -7,38 +7,12 @@ use anyhow::{bail, Result};
 use hex::encode as hex_encode;
 use hmac::{Hmac, Mac};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, USER_AGENT};
+use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 
-pub fn build_signed_request(parameters: BTreeMap<String, String>, recv_window: u64) -> String {
-    build_signed_request_custom(parameters, recv_window, SystemTime::now())
-}
-
-pub fn build_signed_request_custom(
-    mut parameters: BTreeMap<String, String>,
-    recv_window: u64,
-    start: SystemTime,
-) -> String {
-    if recv_window > 0 {
-        parameters.insert("recvWindow".into(), recv_window.to_string());
-    }
-    let timestamp = get_timestamp(start);
-    parameters.insert("timestamp".into(), timestamp.to_string());
-    build_request(parameters)
-}
-
-pub fn build_request(parameters: BTreeMap<String, String>) -> String {
-    let mut request = String::new();
-    for (key, value) in parameters {
-        let param = format!("{}={}&", key, value);
-        request.push_str(param.as_ref());
-    }
-    request.pop();
-    request
-}
-
-fn get_timestamp(start: SystemTime) -> u64 {
-    let since_epoch = start.duration_since(UNIX_EPOCH).unwrap();
-    since_epoch.as_secs() * 1000 + u64::from(since_epoch.subsec_nanos()) / 1_000_000
+#[derive(Serialize, Deserialize, Debug)]
+struct ServerTime {
+    serverTime: i64,
 }
 
 pub struct Binance {
@@ -49,11 +23,15 @@ pub struct Binance {
 }
 
 impl Binance {
-    pub fn new(api_key: String, secret_key: String, host: String) -> Self {
+    pub fn new() -> Self {
         Binance {
-            api_key,
-            secret_key,
-            host,
+            api_key: String::from(
+                "uzmfZmBb2jlmCNi5O9hp27o0CJxa5v42Lec3kVvFkXSPOUl9r8qa3CEFBhAkQThP",
+            ),
+            secret_key: String::from(
+                "LJjVjovJ1oaGowqPE0dRQBFIH9NIxI14Fsq4RTi3NWjFWHQf3yZaEMnkqywW8FIB",
+            ),
+            host: String::from("https://fapi.binance.com"),
             inner_client: reqwest::blocking::Client::builder()
                 .pool_idle_timeout(None)
                 .build()
@@ -95,6 +73,35 @@ impl Binance {
         custom_headers
     }
 
+    pub fn build_signed_request(
+        &self,
+        parameters: BTreeMap<String, String>,
+        recv_window: u64,
+    ) -> String {
+        {
+            let mut parameters = parameters;
+            if recv_window > 0 {
+                parameters.insert("recvWindow".into(), recv_window.to_string());
+            }
+
+            let s: String = self.get("/fapi/v1/time".to_owned(), None).unwrap();
+            let server_time: ServerTime = serde_json::from_str(&s).unwrap();
+
+            parameters.insert("timestamp".into(), server_time.serverTime.to_string());
+            self.build_request(parameters)
+        }
+    }
+
+    pub fn build_request(&self, parameters: BTreeMap<String, String>) -> String {
+        let mut request = String::new();
+        for (key, value) in parameters {
+            let param = format!("{}={}&", key, value);
+            request.push_str(param.as_ref());
+        }
+        request.pop();
+        request
+    }
+
     pub fn get(&self, endpoint: String, request: Option<String>) -> Result<String> {
         let mut url: String = format!("{}{}", self.host, String::from(endpoint));
         if let Some(request) = request {
@@ -126,31 +133,59 @@ impl Binance {
                 let content = resp.text().unwrap();
                 Ok(content)
             }
-            Err(err) => bail!("request failed, {}", err),
+            Err(err) => bail!("get failed, {}", err),
         }
     }
+
+    pub fn post_signed(&self, endpoint: String, request: String) -> Result<String> {
+        let url = self.sign_request(endpoint, Some(request));
+
+        let client = &self.inner_client;
+        match client
+            .post(url.as_str())
+            .headers(self.build_headers(true))
+            .send()
+            {
+                Ok(resp) => {
+                    let content = resp.text().unwrap();
+                    Ok(content)
+                }
+                Err(err) => bail!("post failed, {}", err),
+            }
+    }
+
+    pub fn delete_signed(&self, endpoint: String, request: Option<String>) -> Result<String> {
+        let url = self.sign_request(endpoint, request);
+
+        let client = &self.inner_client;
+        match client
+            .delete(url.as_str())
+            .headers(self.build_headers(true))
+            .send()
+            {
+                Ok(resp) => {
+                    let content = resp.text().unwrap();
+                    Ok(content)
+                }
+                Err(err) => bail!("delete failed, {}", err),
+            }
+    }
+
+
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-
-    use binance::util::build_signed_request;
-
     use super::Binance;
+    use std::collections::BTreeMap;
 
     #[test]
     fn test_excute() {
-        let api_key =
-            String::from("uzmfZmBb2jlmCNi5O9hp27o0CJxa5v42Lec3kVvFkXSPOUl9r8qa3CEFBhAkQThP");
-        let secret_key =
-            String::from("LJjVjovJ1oaGowqPE0dRQBFIH9NIxI14Fsq4RTi3NWjFWHQf3yZaEMnkqywW8FIB");
-        let host = String::from("https://fapi.binance.com");
-        let binance = Binance::new(api_key, secret_key, host);
+        let binance = Binance::new();
 
-        let request = build_signed_request(BTreeMap::new(), 1000).unwrap();
+        let request = binance.build_signed_request(BTreeMap::new(), 1000);
         let result = binance
-            .get_signed("/fapi/v2/account".to_owned(), Some(request))
+            .get_signed("/fapi/v1/openOrders".to_owned(), Some(request))
             .unwrap();
         println!("{:?}", result);
     }
