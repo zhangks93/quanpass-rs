@@ -1,17 +1,24 @@
+use rust_decimal::Decimal;
 
-pub fn get_precision(num: f32) -> i32 {
-    let mut decimal = num - num.floor();
-    print!("{:?}", decimal);
-    if decimal == 0.0 {
-        return 0;
+pub fn get_precision(num: f64) -> u32 {
+    let temp = num.to_string();
+    if temp.contains(".") {
+        let splited:Vec<&str> = temp.split(".").collect();
+        splited[1].len().try_into().unwrap()
+    }else {
+        0
     }
-    (decimal.to_string().len() - 2).try_into().unwrap()
 
+}
+
+pub fn round(x: f64, decimals: u32) -> f64 {
+    let y = 10i32.pow(decimals) as f64;
+    (x * y).round() / y
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::util::number_util::get_precision;
+    use crate::util::number_util::{get_precision, round};
 
     #[test]
     fn test_get_precision() {
@@ -26,5 +33,13 @@ mod tests {
     #[test]
     fn test_get_precision_3() {
         assert_eq!(get_precision(14.0), 0);
+    }
+
+    
+
+    #[test]
+    fn test_round() {
+        assert_eq!(round(3.1415, 2), 3.14);
+        assert_eq!(round(3.1415, 0), 3.0);
     }
 }

@@ -8,15 +8,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
-    order_id: i64,
-    symbol: String,
-    status: String,
+    pub order_id: i64,
+    pub symbol: String,
+    pub status: String,
     #[serde(with = "string_or_float")]
     pub price: f64,
-    time_in_force: String,
-    side: String,
-    position_side: String,
-    updateTime: i64,
+    pub time_in_force: String,
+    pub side: String,
+    pub position_side: String,
+    pub update_time: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Future {
+    pub symbol: String,
+    #[serde(with = "string_or_float")]
+    pub price_change_percent: f64,
+    #[serde(with = "string_or_float")]
+    pub last_price: f64,
 }
 
 pub struct FuturesClient {
@@ -27,6 +37,16 @@ impl FuturesClient {
     pub fn new() -> FuturesClient {
         FuturesClient {
             binance: Binance::new(),
+        }
+    }
+
+    pub fn get_futures(&self) -> Result<Vec<Future>> {
+        match self.binance.get("/fapi/v1/ticker/24hr".to_owned(), None) {
+            Ok(resp) => {
+                let result: Vec<Future> = serde_json::from_str(&resp).unwrap();
+                Ok(result)
+            }
+            Err(err) => bail!("place open orders failed, {}", err),
         }
     }
 
@@ -101,13 +121,23 @@ impl FuturesClient {
 }
 
 mod tests {
+    use crate::{trade::futures_client::Order, util::time_util::hours_ago_timestamp};
+
     use super::FuturesClient;
 
     #[test]
-    fn test_open_orders() {
+    fn test_get_open_orders_and_cancel_orders_updated_2hours_ago() {
         let client: FuturesClient = FuturesClient::new();
-        let orders = client.open_orders();
-        println!("{:?}", orders.unwrap());
+        // 1. get open orders and filter the orders updated 2 hours ago
+        let orders = client.open_orders().unwrap();
+        let filtered = orders
+            .into_iter()
+            .filter(|item| item.update_time < hours_ago_timestamp(2))
+            .collect::<Vec<Order>>();
+        // 2. cancel the filtered order list
+        for order in filtered {
+            client.cancel_order(order.symbol, order.order_id);
+        }
     }
 
     #[test]
@@ -136,5 +166,16 @@ mod tests {
         let client: FuturesClient = FuturesClient::new();
         let order = client.change_leverage("AGIXUSDT".to_owned(), 10);
         println!("{:?}", order.unwrap());
+    }
+
+    #[test]
+    fn test_get_futures() {
+        let client: FuturesClient = FuturesClient::new();
+        let mut futures = client.get_futures().unwrap();
+        futures.sort_by(|a, b| a.price_change_percent.total_cmp(&b.price_change_percent));
+
+        for i in 1..10 {
+            println!("{:?}", futures.get(futures.len() - i));
+        }
     }
 }

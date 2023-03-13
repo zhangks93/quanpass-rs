@@ -11,7 +11,6 @@ mod tests {
 
     #[test]
     fn test_excute() {
-        println!("{:?}", hours_ago_timestamp(1))
-       
+        println!("{:?}", hours_ago_timestamp(1)) 
     }
 }
