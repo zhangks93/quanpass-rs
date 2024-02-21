@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use crate::strategy::strategy::Strategy;
 use crate::trade::crypto_client::CryptoClient;
+use crate::util::number_util::{get_precision, round};
 use binance::api::Binance;
 use binance::market::Market;
 use polars::export::num::ToPrimitive;
@@ -55,25 +56,16 @@ impl Strategy for GridStrategy {
                 return;
             }
         }
-        // cancel orders which are expired
-        let open_orders: Vec<Order> = self.crypto_client.open_orders();
-        open_orders
-            .iter()
-            .filter(|order| order.time > 10000000)
-            .for_each(|order| {
-                self.crypto_client
-                    .cancel_order(order.symbol.to_string(), order.order_id);
-            });
 
         self.crypto_client.limit_buy(
             self.symbol.as_str(),
             *quantity,
-            (current_price * (1.0 - gap) * 100000.0).round() / 100000.0,
+            round((current_price * (1.0 - gap) * 100000.0).round() / 100000.0, get_precision(current_price)),
         );
         self.crypto_client.limit_sell(
             self.symbol.as_str(),
             *quantity,
-            (current_price * (1.0 + gap) * 100000.0).round() / 100000.0,
+            round((current_price * (1.0 + gap) * 100000.0).round() / 100000.0, get_precision(current_price)),
         );
     }
 }
