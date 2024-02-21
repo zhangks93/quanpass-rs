@@ -29,6 +29,7 @@ pub struct Future {
     pub last_price: f64,
 }
 
+#[derive(Clone)]
 pub struct FuturesClient {
     binance: Binance,
 }

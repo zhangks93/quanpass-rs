@@ -1,6 +1,7 @@
 use binance::account::Account;
 use binance::api::Binance;
 
+#[derive(Clone)]
 pub struct CryptoClient {
     binance_client: Account,
 }

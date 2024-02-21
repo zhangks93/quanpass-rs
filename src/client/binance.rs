@@ -12,6 +12,7 @@ struct ServerTime {
     server_time: i64,
 }
 
+#[derive(Clone)]
 pub struct Binance {
     api_key: String,
     secret_key: String,

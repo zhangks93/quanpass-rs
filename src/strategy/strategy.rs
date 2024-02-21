@@ -5,6 +5,7 @@ use super::short_leader_strategy::ShortLeaderStrategy;
 
 pub trait Strategy {
     fn excute(& self);
+    fn clone_box(&self) -> Box<dyn Strategy>;
 }
 
 pub struct StrategyFactory;

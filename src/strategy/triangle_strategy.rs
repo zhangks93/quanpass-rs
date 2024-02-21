@@ -25,12 +25,26 @@ impl TriangleStrategy {
     }
 }
 
+impl Clone for TriangleStrategy {
+    fn clone(&self) -> Self {
+        TriangleStrategy {
+            name: self.name.clone(),
+            crypto_client: self.crypto_client.clone(), // Ensure CryptoClient also implements Clone
+            symbol: self.symbol.clone(),
+            params: self.params.clone(),
+        }
+    }
+}
+
 impl Strategy for TriangleStrategy {
-    fn excute(& self) {
+    fn clone_box(&self) -> Box<dyn Strategy> {
+        Box::new((*self).clone())
+    }
+    fn excute(&self) {
         let market: Market = Binance::new(None, None);
         let gap = self.params.get("gap").unwrap().to_f64().unwrap();
         let quantity = self.params.get("quantity").unwrap();
-        let splited: Vec<&str> =  self.symbol.split(';').collect();
+        let splited: Vec<&str> = self.symbol.split(';').collect();
         let symbol_1 = String::from(splited[0]);
         let symbol_2 = String::from(splited[1]);
         let mut current_price_1 = 0.0;
@@ -51,7 +65,7 @@ impl Strategy for TriangleStrategy {
             }
         }
         // cancel orders which are expired
-        /* 
+        /*
         let open_orders: Vec<Order> = self.crypto_client.open_orders();
         open_orders
             .iter()

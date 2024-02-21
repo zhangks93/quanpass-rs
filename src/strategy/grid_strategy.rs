@@ -26,8 +26,23 @@ impl GridStrategy {
     }
 }
 
+impl Clone for GridStrategy {
+    fn clone(&self) -> Self {
+        GridStrategy {
+            name: self.name.clone(),
+            crypto_client: self.crypto_client.clone(), // Ensure CryptoClient also implements Clone
+            symbol: self.symbol.clone(),
+            params: self.params.clone(),
+        }
+    }
+}
+
 impl Strategy for GridStrategy {
-    fn excute(& self) {
+    fn clone_box(&self) -> Box<dyn Strategy> {
+        Box::new((*self).clone())
+    }
+
+    fn excute(&self) {
         let market: Market = Binance::new(None, None);
         let gap = self.params.get("gap").unwrap().to_f64().unwrap();
         let quantity = self.params.get("quantity").unwrap();

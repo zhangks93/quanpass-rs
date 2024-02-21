@@ -22,8 +22,22 @@ impl ShortLeaderStrategy {
     }
 }
 
+impl Clone for ShortLeaderStrategy {
+    fn clone(&self) -> Self {
+        ShortLeaderStrategy {
+            name: self.name.clone(),
+            futures_client: self.futures_client.clone(), // Ensure CryptoClient also implements Clone
+            params: self.params.clone(),
+        }
+    }
+}
+
 impl Strategy for ShortLeaderStrategy {
-    fn excute(& self) {
+    fn clone_box(&self) -> Box<dyn Strategy> {
+        Box::new((*self).clone())
+    }
+
+    fn excute(&self) {
         // 1.filter top 5 futures and place an order with a price above 23% from the latest price
         let order_size = 300.0;
         let mut futures = self.futures_client.get_futures().unwrap();
@@ -50,7 +64,10 @@ impl Strategy for ShortLeaderStrategy {
             println!("{}", limit_price_short);
             println!("{}", limit_price_long);
             let mut rng = rand::thread_rng();
-            match self.futures_client.change_margin_type(temp.symbol.to_owned(), "ISOLATED".to_owned()) {
+            match self
+                .futures_client
+                .change_margin_type(temp.symbol.to_owned(), "ISOLATED".to_owned())
+            {
                 Ok(result) => {
                     println!("{}", result);
                 }
