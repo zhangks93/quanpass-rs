@@ -8,7 +8,7 @@ pub mod robot;
 
 #[handler]
 pub fn get_robots(res: &mut Response) {
-    println!("{:?}", Robot::active_list());
+    println!("{:?}", Robot::list());
     res.render("robots");
 }
 
@@ -23,10 +23,10 @@ pub fn append_robot() -> &'static str {
             String::from("ID"),
             String::from("Name"),
             String::from("Grid"),
-            String::from("STRKFDUSD"),
+            String::from("ARBFDUSD"),
             params,
         ),
-        "0 1/5 * * * *",
+        "0 1/2 * * * *",
     );});
     return "Success";
 }

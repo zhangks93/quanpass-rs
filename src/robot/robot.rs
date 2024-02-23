@@ -1,4 +1,7 @@
-use crate::strategy::strategy::{Strategy, StrategyFactory};
+use crate::{
+    strategy::strategy::{Strategy, StrategyFactory},
+    util::string_util::generate_random_id,
+};
 use job_scheduler::{Job, JobScheduler, Uuid};
 use once_cell::sync::Lazy;
 use std::{collections::HashMap, sync::Mutex};
@@ -44,12 +47,12 @@ impl Robot {
 
     pub fn append(robot: Robot, schedule: &str) {
         unsafe {
-            
             let uuid =
                 MANAGER
                     .lock()
                     .unwrap()
                     .add(Job::new(schedule.parse().unwrap(), move || {
+                        println!("{}", generate_random_id());
                         robot.excute();
                     }));
             ACTIVE_ROBOTS.lock().unwrap().insert(
@@ -65,7 +68,20 @@ impl Robot {
         }
     }
 
-    pub fn active_list() -> Vec<String> {
+    pub fn remove(uuid: String) {
+        unsafe {
+            MANAGER
+                .lock()
+                .unwrap()
+                .remove(Uuid::parse_str(uuid.as_str()).unwrap());
+            ACTIVE_ROBOTS
+                .lock()
+                .unwrap()
+                .remove(&Uuid::parse_str(uuid.as_str()).unwrap());
+        }
+    }
+
+    pub fn list() -> Vec<String> {
         unsafe {
             return ACTIVE_ROBOTS
                 .lock()
