@@ -32,7 +32,7 @@ pub fn append_robot() -> &'static str {
         );
     });
     std::thread::sleep(Duration::from_millis(120000));
-    params_clone1.insert(String::from("quantity"), 0.024_f32);
+    params_clone1.insert(String::from("quantity"), 0.03_f32);
     thread::spawn(|| {
         Robot::append(
             Robot::new(
