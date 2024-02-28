@@ -1,6 +1,6 @@
 use std::{collections::HashMap, thread, time::Duration};
 
-use salvo::{handler, Response};
+use salvo::{handler, Request, Response};
 
 use self::robot::Robot;
 
@@ -13,11 +13,10 @@ pub fn get_robots(res: &mut Response) {
 }
 
 #[handler]
-pub fn append_robot() -> &'static str {
+pub async fn append_robot() -> &'static str {
     let mut params = HashMap::new();
-    params.insert(String::from("quantity"), 10_f32);
+    params.insert(String::from("quantity"), 12_f32);
     params.insert(String::from("gap"), 0.002_f32);
-    let mut params_clone1 = params.clone();
     let mut params_clone2 = params.clone();
     thread::spawn(|| {
         Robot::append(
@@ -25,39 +24,25 @@ pub fn append_robot() -> &'static str {
                 String::from("ID"),
                 String::from("Name"),
                 String::from("Grid"),
-                String::from("ARBFDUSD"),
+                String::from("PIXELFDUSD"),
                 params,
             ),
-            "0 1/5 * * * *",
+            "0 1/4 * * * *",
         );
     });
-    std::thread::sleep(Duration::from_millis(120000));
-    params_clone1.insert(String::from("quantity"), 0.03_f32);
+    params_clone2.insert(String::from("quantity"), 2_f32);
     thread::spawn(|| {
         Robot::append(
             Robot::new(
                 String::from("ID"),
                 String::from("Name"),
                 String::from("Grid"),
-                String::from("ORDIFDUSD"),
-                params_clone1,
-            ),
-            "0 1/5 * * * *",
-        );
-    });
-    std::thread::sleep(Duration::from_millis(120000));
-    params_clone2.insert(String::from("quantity"), 20_f32);
-    thread::spawn(|| {
-        Robot::append(
-            Robot::new(
-                String::from("ID"),
-                String::from("Name"),
-                String::from("Grid"),
-                String::from("SEIFDUSD"),
+                String::from("MANTAFDUSD"),
                 params_clone2,
             ),
-            "0 1/5 * * * *",
+            "0 1/4 * * * *",
         );
     });
     return "Success";
 }
+

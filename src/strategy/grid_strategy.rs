@@ -60,12 +60,44 @@ impl Strategy for GridStrategy {
         self.crypto_client.limit_buy(
             self.symbol.as_str(),
             *quantity,
-            round((current_price * (1.0 - gap) * 100000.0).round() / 100000.0, get_precision(current_price)),
+            round(
+                (current_price * (1.0 - gap) * 100000.0).round() / 100000.0,
+                get_precision(current_price),
+            ),
         );
         self.crypto_client.limit_sell(
             self.symbol.as_str(),
             *quantity,
-            round((current_price * (1.0 + gap) * 100000.0).round() / 100000.0, get_precision(current_price)),
+            round(
+                (current_price * (1.0 + gap) * 100000.0).round() / 100000.0,
+                get_precision(current_price),
+            ),
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use binance::{api::Binance, market::Market, model::KlineSummary};
+
+    #[test]
+    fn test_excute() {
+        let market: Market = Binance::new(None, None);
+        match market.get_klines("GALAFDUSD", "1d", 30, None, None) {
+            Ok(klines) => match klines {
+                binance::model::KlineSummaries::AllKlineSummaries(klines) => {
+                    for kilne in &klines {
+                        println!(
+                            "Open: {}, High: {}, Low: {}, Close: {}",
+                            kilne.clone().open,
+                            kilne.clone().high,
+                            kilne.clone().low,
+                            kilne.clone().close
+                        )
+                    }
+                }
+            },
+            Err(e) => println!("Error: {}", e),
+        }
     }
 }
