@@ -6,7 +6,8 @@ mod strategy;
 mod trade;
 mod util;
 
-use robot::{append_robot, get_robots, robot::MANAGER};
+use robot::{append_robot, get_robots, remove_robot, robot::MANAGER};
+use salvo::{cors::Cors, http::Method};
 use salvo::prelude::*;
 use std::{thread, time::Duration};
 
@@ -21,13 +22,22 @@ fn start_job_scheduler() {
 
 #[tokio::main]
 async fn main() {
-    let router = Router::new()
-        .push(Router::with_path("add_robot").get(append_robot))
-        .push(Router::with_path("robot_list").get(get_robots));
-    let acceptor = TcpListener::new("127.0.0.1:8080").bind().await;
     thread::spawn(|| {
         start_job_scheduler();
     });
 
-    Server::new(acceptor).serve(router).await;
+    let router = Router::new().push(
+        Router::with_path("robot")
+            .get(get_robots)
+            .post(append_robot)
+            .delete(remove_robot),
+    );
+    let cors = Cors::new()
+        .allow_origin("http://158.247.243.188")
+        .allow_methods(vec![Method::GET, Method::POST, Method::DELETE])
+        .into_handler();
+    let acceptor = TcpListener::new("127.0.0.1:8080").bind().await;
+    let service = Service::new(router).hoop(cors);
+
+    Server::new(acceptor).serve(service).await;
 }

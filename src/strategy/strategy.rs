@@ -1,11 +1,12 @@
-use std::collections::HashMap;
-use crate::strategy::grid_strategy::GridStrategy;
-use crate::strategy::triangle_strategy::TriangleStrategy;
 use super::short_leader_strategy::ShortLeaderStrategy;
+use crate::strategy::grid_strategy::GridStrategy;
+use std::collections::HashMap;
+
 
 pub trait Strategy {
-    fn excute(& self);
+    fn excute(&self);
     fn clone_box(&self) -> Box<dyn Strategy>;
+    
 }
 
 pub struct StrategyFactory;
@@ -15,15 +16,17 @@ impl StrategyFactory {
         StrategyFactory
     }
 
-    pub fn create_strategy(&self, label: &str, symbol: String, params: HashMap<String, f32>) -> Box<dyn Strategy> {
+    pub fn create_strategy(
+        &self,
+        label: &str,
+        params: HashMap<String, String>,
+    ) -> Box<dyn Strategy> {
         if label == "Grid" {
-            Box::new(GridStrategy::new(symbol, params))
+            Box::new(GridStrategy::new(params))
         } else if label == "Short Leader" {
             Box::new(ShortLeaderStrategy::new(params))
-        } else if label == "Triangle" {
-            Box::new(TriangleStrategy::new(symbol,params))
         } else {
-            Box::new(GridStrategy::new(symbol, params))
+            Box::new(GridStrategy::new(params))
         }
     }
 }

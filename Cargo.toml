@@ -28,7 +28,7 @@ sha2 = "0.10.6"
 error-chain = "0.12.4"
 chrono = "0.4.23"
 rust_decimal = "1.29"
-salvo = "0.59"
+salvo = {version = "0.66", features=["cors"] }
 tokio = { version = "1", features = ["macros"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"

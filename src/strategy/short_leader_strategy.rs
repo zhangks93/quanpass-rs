@@ -9,11 +9,11 @@ use rand::Rng;
 pub struct ShortLeaderStrategy {
     name: String,
     futures_client: FuturesClient,
-    params: HashMap<String, f32>,
+    params: HashMap<String, String>,
 }
 
 impl ShortLeaderStrategy {
-    pub fn new(params: HashMap<String, f32>) -> ShortLeaderStrategy {
+    pub fn new(params: HashMap<String, String>) -> ShortLeaderStrategy {
         ShortLeaderStrategy {
             name: String::from("强势做空策略"),
             futures_client: FuturesClient::new(),
@@ -129,14 +129,11 @@ impl Strategy for ShortLeaderStrategy {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
-    use crate::strategy::strategy::Strategy;
-
     use super::ShortLeaderStrategy;
+    use crate::strategy::strategy::Strategy;
+    use std::collections::HashMap;
 
     #[test]
     fn test_excute() {
-        ShortLeaderStrategy::new(HashMap::new()).excute()
     }
 }

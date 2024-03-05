@@ -1,9 +1,7 @@
-use crate::{
-    strategy::strategy::{Strategy, StrategyFactory},
-    util::string_util::generate_random_id,
-};
+use crate::strategy::strategy::{Strategy, StrategyFactory};
 use job_scheduler::{Job, JobScheduler, Uuid};
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Mutex};
 
 pub static mut MANAGER: Lazy<Mutex<JobScheduler>> = Lazy::new(|| Mutex::new(JobScheduler::new()));
@@ -21,7 +19,7 @@ impl Clone for Robot {
         Robot {
             id: self.id.clone(),
             name: self.name.clone(),
-            strategy: self.strategy.clone_box(), // Assume clone_box is implemented for Strategy
+            strategy: self.strategy.clone_box(),
         }
     }
 }
@@ -31,28 +29,33 @@ impl Robot {
         id: String,
         name: String,
         strategy: String,
-        symbol: String,
-        params: HashMap<String, f32>,
+        params: HashMap<String, String>,
     ) -> Robot {
         Robot {
             id: id,
             name: name,
-            strategy: StrategyFactory::new().create_strategy(&strategy, symbol, params),
+            strategy: StrategyFactory::new().create_strategy(&strategy, params),
         }
+    }
+
+    pub fn to_map(&self) -> HashMap<String, String> {
+        let mut map: HashMap<String, String> = HashMap::new();
+        map.insert("id".to_string(), self.id.clone());
+        map.insert("name".to_string(), self.name.clone());
+        return map;
     }
 
     pub fn excute(&self) {
         self.strategy.excute();
     }
 
-    pub fn append(robot: Robot, schedule: &str) {
+    pub fn append(robot: Robot, schedule: &str) -> String {
         unsafe {
             let uuid =
                 MANAGER
                     .lock()
                     .unwrap()
                     .add(Job::new(schedule.parse().unwrap(), move || {
-                        println!("{}", generate_random_id());
                         robot.excute();
                     }));
             ACTIVE_ROBOTS.lock().unwrap().insert(
@@ -61,16 +64,16 @@ impl Robot {
                     uuid.to_string(),
                     String::from("name"),
                     String::from("strategy"),
-                    String::from("strategy"),
                     HashMap::new(),
                 ),
             );
+            return uuid.to_string();
         }
     }
 
-    pub fn remove(uuid: String) {
+    pub fn remove(uuid: String) -> bool {
         unsafe {
-            MANAGER
+            let is_removed = MANAGER
                 .lock()
                 .unwrap()
                 .remove(Uuid::parse_str(uuid.as_str()).unwrap());
@@ -78,16 +81,17 @@ impl Robot {
                 .lock()
                 .unwrap()
                 .remove(&Uuid::parse_str(uuid.as_str()).unwrap());
+            return is_removed;
         }
     }
 
-    pub fn list() -> Vec<String> {
+    pub fn list() -> Vec<HashMap<String, String>> {
         unsafe {
             return ACTIVE_ROBOTS
                 .lock()
                 .unwrap()
                 .values()
-                .map(|robot| robot.id.clone())
+                .map(|robot| robot.to_map())
                 .collect();
         }
     }
