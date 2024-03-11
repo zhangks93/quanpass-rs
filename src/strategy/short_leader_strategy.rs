@@ -129,11 +129,36 @@ impl Strategy for ShortLeaderStrategy {
 
 #[cfg(test)]
 mod tests {
-    use super::ShortLeaderStrategy;
-    use crate::strategy::strategy::Strategy;
-    use std::collections::HashMap;
+    use binance::{api::Binance, market::Market};
 
     #[test]
     fn test_excute() {
+        let market: Market = Binance::new(None, None);
+        match market.get_all_24h_price_stats() {
+            Ok(prices) => {
+                let mut filtered_prices = prices
+                    .iter() // or into_iter() if you want to consume the original vector
+                    .filter(|price| price.symbol.ends_with("FDUSD"))
+                    .cloned() // Clone the filtered items to a new collection if necessary
+                    .collect::<Vec<_>>();
+                filtered_prices.sort_by(|a, b| {
+                    a.price_change_percent
+                        .partial_cmp(&b.price_change_percent)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                });
+                filtered_prices.iter().for_each(|price| {
+                    println!(
+                        "Symbol: {}, Percent: {}, Open: {}, High: {}, Low: {}, Close: {}",
+                        price.clone().symbol,
+                        price.clone().price_change_percent,
+                        price.clone().open_price,
+                        price.clone().high_price,
+                        price.clone().low_price,
+                        price.clone().last_price
+                    )
+                });
+            }
+            Err(e) => println!("Error: {}", e),
+        }
     }
 }
