@@ -36,7 +36,7 @@ async fn main() {
         .allow_origin("http://158.247.243.188")
         .allow_methods(vec![Method::GET, Method::POST, Method::DELETE])
         .into_handler();
-    let acceptor = TcpListener::new("127.0.0.1:8080").bind().await;
+    let acceptor = TcpListener::new("0.0.0.0:8080").bind().await;
     let service = Service::new(router).hoop(cors);
 
     Server::new(acceptor).serve(service).await;
