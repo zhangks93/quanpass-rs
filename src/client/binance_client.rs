@@ -1,29 +1,39 @@
-use anyhow::{bail, Error, Result};
-use std::collections::BTreeMap;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::BTreeMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
+use anyhow::bail;
 use hex::encode as hex_encode;
 use hmac::{Hmac, Mac};
-use reqwest::blocking::Response;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE, USER_AGENT};
-use reqwest::StatusCode;
+use reqwest::{
+    blocking::Response,
+    header::{HeaderMap, HeaderName, HeaderValue},
+    StatusCode,
+};
 use serde::de::DeserializeOwned;
 use sha2::Sha256;
 
+
+
 #[derive(Clone)]
-pub struct Client {
+pub struct BinanceClient {
     api_key: String,
     secret_key: String,
     host: String,
     inner_client: reqwest::blocking::Client,
 }
 
-impl Client {
-    pub fn new(api_key: Option<String>, secret_key: Option<String>, host: String) -> Self {
-        Client {
-            api_key: api_key.unwrap_or_default(),
-            secret_key: secret_key.unwrap_or_default(),
-            host,
+impl BinanceClient {
+    pub fn new() -> Self {
+        BinanceClient {
+            api_key: String::from(
+                "uzmfZmBb2jlmCNi5O9hp27o0CJxa5v42Lec3kVvFkXSPOUl9r8qa3CEFBhAkQThP",
+            ),
+            secret_key: String::from(
+                "LJjVjovJ1oaGowqPE0dRQBFIH9NIxI14Fsq4RTi3NWjFWHQf3yZaEMnkqywW8FIB",
+            ),
+            host: String::from("https://api.binance.com"),
             inner_client: reqwest::blocking::Client::builder()
                 .pool_idle_timeout(None)
                 .build()
@@ -31,48 +41,46 @@ impl Client {
         }
     }
 
-    pub fn get_signed<T: DeserializeOwned>(
-        &self,
-        endpoint: String,
-        request: Option<String>,
-    ) -> Result<T> {
-        let url = self.sign_request(endpoint, request);
-        let client = &self.inner_client;
-        let response = client
-            .get(url.as_str())
-            .headers(self.build_headers(true)?)
-            .send()?;
+    fn build_headers(&self, content_type: bool) -> Result<HeaderMap, anyhow::Error> {
+        let mut custom_headers = HeaderMap::new();
 
-        self.handler(response).unwrap()
-    }
-
-    pub fn post_signed<T: DeserializeOwned>(&self, endpoint: String, request: String) -> Result<T> {
-        let url = self.sign_request(endpoint, Some(request));
-        let client = &self.inner_client;
-        let response = client
-            .post(url.as_str())
-            .headers(self.build_headers(true)?)
-            .send()?;
-
-        self.handler(response).unwrap()
-    }
-
-    pub fn get<T: DeserializeOwned>(&self, endpoint: String, request: Option<String>) -> Result<T> {
-        let mut url: String = format!("{}{}", self.host, String::from(endpoint));
-        if let Some(request) = request {
-            if !request.is_empty() {
-                url.push_str(format!("?{}", request).as_str());
-            }
+        custom_headers.insert("user-agent", HeaderValue::from_static("binance-rs"));
+        if content_type {
+            custom_headers.insert(
+                "content-type",
+                HeaderValue::from_static("application/x-www-form-urlencoded"),
+            );
         }
+        custom_headers.insert(
+            HeaderName::from_static("x-mbx-apikey"),
+            HeaderValue::from_str(self.api_key.as_str())?,
+        );
 
-        let client = &self.inner_client;
-        let response = client.get(url.as_str()).send()?;
-
-        self.handler(response).unwrap()
+        Ok(custom_headers)
     }
 
-    // Request must be signed
-    fn sign_request(&self, endpoint: String, request: Option<String>) -> String {
+    pub fn build_request(&self, parameters: BTreeMap<String, String>) -> String {
+        let mut request = String::new();
+        for (key, value) in parameters {
+            let param = format!("{}={}&", key, value);
+            request.push_str(param.as_ref());
+        }
+        request.pop();
+        request
+    }
+
+    fn get_timestamp(&self, start: SystemTime) -> u64 {
+        let since_epoch = start.duration_since(UNIX_EPOCH).unwrap();
+        since_epoch.as_secs() * 1000 + u64::from(since_epoch.subsec_nanos()) / 1_000_000
+    }
+
+    pub fn build_signed_request(&self, mut parameters: BTreeMap<String, String>) -> String {
+        let timestamp = self.get_timestamp(SystemTime::now());
+        parameters.insert("timestamp".into(), timestamp.to_string());
+        return self.build_request(parameters);
+    }
+
+    fn sign_request(&self, endpoint: &str, request: Option<String>) -> String {
         if let Some(request) = request {
             let mut signed_key =
                 Hmac::<Sha256>::new_from_slice(self.secret_key.as_bytes()).unwrap();
@@ -88,25 +96,7 @@ impl Client {
         }
     }
 
-    fn build_headers(&self, content_type: bool) -> HeaderMap {
-        let mut custom_headers = HeaderMap::new();
-
-        custom_headers.insert(USER_AGENT, HeaderValue::from_static("binance-rs"));
-        if content_type {
-            custom_headers.insert(
-                CONTENT_TYPE,
-                HeaderValue::from_static("application/x-www-form-urlencoded"),
-            );
-        }
-        custom_headers.insert(
-            HeaderName::from_static("x-mbx-apikey"),
-            HeaderValue::from_str(self.api_key.as_str())?,
-        );
-
-        custom_headers
-    }
-
-    fn handler<T: DeserializeOwned>(&self, response: Response) -> Result<T> {
+    fn handler<T: DeserializeOwned>(&self, response: Response) -> Result<T, anyhow::Error> {
         match response.status() {
             StatusCode::OK => Ok(response.json::<T>()?),
             StatusCode::INTERNAL_SERVER_ERROR => {
@@ -118,60 +108,83 @@ impl Client {
             StatusCode::UNAUTHORIZED => {
                 bail!("Unauthorized");
             }
-            StatusCode::BAD_REQUEST => {
-                bail!("Bad request");
+            s => {
+                bail!(format!("Received response: {:?}", s));
             }
         }
     }
-}
 
-pub fn build_signed_request(parameters: BTreeMap<String, String>, recv_window: u64) -> String {
-    build_signed_request_custom(parameters, recv_window, SystemTime::now())
-}
+    pub fn get_signed<T: DeserializeOwned>(
+        &self,
+        endpoint: &str,
+        request: Option<String>,
+    ) -> Result<T, anyhow::Error> {
+        let url = self.sign_request(endpoint, request);
+        let client = &self.inner_client;
+        let response = client
+            .get(url.as_str())
+            .headers(self.build_headers(true)?)
+            .send()?;
 
-pub fn build_signed_request_custom(
-    mut parameters: BTreeMap<String, String>,
-    recv_window: u64,
-    start: SystemTime,
-) -> String {
-    if recv_window > 0 {
-        parameters.insert("recvWindow".into(), recv_window.to_string());
+        self.handler(response)
     }
-    let timestamp = get_timestamp(start);
-    parameters.insert("timestamp".into(), timestamp.to_string());
-    build_request(parameters)
-}
 
-pub fn build_request(parameters: BTreeMap<String, String>) -> String {
-    let mut request = String::new();
-    for (key, value) in parameters {
-        let param = format!("{}={}&", key, value);
-        request.push_str(param.as_ref());
+    pub fn post_signed<T: DeserializeOwned>(
+        &self,
+        endpoint: &str,
+        request: Option<String>,
+    ) -> Result<T, anyhow::Error> {
+        let url = self.sign_request(endpoint, request);
+        let client = &self.inner_client;
+        let response = client
+            .post(url.as_str())
+            .headers(self.build_headers(true)?)
+            .send()?;
+
+        self.handler(response)
     }
-    request.pop();
-    request
-}
 
-fn get_timestamp(start: SystemTime) -> u64 {
-    let since_epoch = start.duration_since(UNIX_EPOCH)?;
-    since_epoch.as_secs() * 1000 + u64::from(since_epoch.subsec_nanos()) / 1_000_000
-}
+    pub fn delete_signed<T: DeserializeOwned>(
+        &self,
+        endpoint: &str,
+        request: Option<String>,
+    ) -> Result<T, anyhow::Error> {
+        let url = self.sign_request(endpoint, request);
+        let client = &self.inner_client;
+        let response = client
+            .delete(url.as_str())
+            .headers(self.build_headers(true)?)
+            .send()?;
 
-#[cfg(test)]
-mod tests {
-    use super::Client;
+        self.handler(response)
+    }
+    pub fn get<T: DeserializeOwned>(
+        &self,
+        endpoint: &str,
+        request: Option<String>,
+    ) -> Result<T, anyhow::Error> {
+        let mut url: String = format!("{}{}", self.host, String::from(endpoint));
+        if let Some(request) = request {
+            if !request.is_empty() {
+                url.push_str(format!("?{}", request).as_str());
+            }
+        }
 
-    #[test]
-    fn test_excute() {
-        let api_key =
-            Some("uzmfZmBb2jlmCNi5O9hp27o0CJxa5v42Lec3kVvFkXSPOUl9r8qa3CEFBhAkQThP".into());
-        let secret_key =
-            Some("LJjVjovJ1oaGowqPE0dRQBFIH9NIxI14Fsq4RTi3NWjFWHQf3yZaEMnkqywW8FIB".into());
-        let client = Client::new(
-            api_key,
-            secret_key,
-            String::from("https://fapi.binance.com"),
-        );
-        client.get_signed(String::from("/fapi/v1/ticker/24hr"), None);
+        let client = &self.inner_client;
+        let response = client.get(url.as_str()).send()?;
+
+        self.handler(response)
+    }
+
+    pub fn post<T: DeserializeOwned>(&self, endpoint: &str) -> Result<T, anyhow::Error> {
+        let url: String = format!("{}{}", self.host, String::from(endpoint));
+
+        let client = &self.inner_client;
+        let response = client
+            .post(url.as_str())
+            .headers(self.build_headers(false)?)
+            .send()?;
+
+        self.handler(response)
     }
 }

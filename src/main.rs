@@ -3,7 +3,7 @@ mod market;
 mod notify;
 mod robot;
 mod strategy;
-mod trade;
+mod crypto;
 mod util;
 
 use robot::{append_robot, get_robots, remove_robot, robot::MANAGER};

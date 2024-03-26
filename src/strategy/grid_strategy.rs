@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
 use crate::strategy::strategy::Strategy;
-use crate::trade::crypto_client::CryptoClient;
+use crate::crypto::crypto_client::CryptoClient;
 use crate::util::number_util::{get_precision, round};
-use binance::api::Binance;
-use binance::market::Market;
 
 pub struct GridStrategy {
     name: String,
@@ -38,7 +36,6 @@ impl Strategy for GridStrategy {
     }
 
     fn excute(&self) {
-        let market: Market = Binance::new(None, None);
         let gap: f64 = self
             .params
             .get("gap")
@@ -52,15 +49,7 @@ impl Strategy for GridStrategy {
             .parse()
             .expect("Not a valid f32");
         let symbol = self.params.get("symbol").unwrap();
-        let mut current_price = 0.0;
-
-        match market.get_price(symbol.as_str()) {
-            Ok(result) => current_price = result.price,
-            Err(_) => {
-                println!("Network Error");
-                return;
-            }
-        }
+        let current_price = self.crypto_client.current_price(symbol.as_str()).price;
 
         self.crypto_client.limit_buy(
             symbol.as_str(),
@@ -83,7 +72,7 @@ impl Strategy for GridStrategy {
 
 #[cfg(test)]
 mod tests {
-    use binance::{api::Binance, market::Market, model::KlineSummary};
+    use binance::{api::Binance, market::Market};
 
     #[test]
     fn test_excute() {

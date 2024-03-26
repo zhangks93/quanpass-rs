@@ -1,4 +1,3 @@
-use super::short_leader_strategy::ShortLeaderStrategy;
 use crate::strategy::grid_strategy::GridStrategy;
 use std::collections::HashMap;
 
@@ -23,8 +22,6 @@ impl StrategyFactory {
     ) -> Box<dyn Strategy> {
         if label == "Grid" {
             Box::new(GridStrategy::new(params))
-        } else if label == "Short Leader" {
-            Box::new(ShortLeaderStrategy::new(params))
         } else {
             Box::new(GridStrategy::new(params))
         }
