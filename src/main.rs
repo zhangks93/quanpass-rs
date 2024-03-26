@@ -32,12 +32,12 @@ async fn main() {
             .post(append_robot)
             .delete(remove_robot),
     );
-    let cors = Cors::new()
+    /* let cors = Cors::new()
         .allow_origin("http://158.247.243.188")
         .allow_methods(vec![Method::GET, Method::POST, Method::DELETE])
-        .into_handler();
+        .into_handler(); */
     let acceptor = TcpListener::new("0.0.0.0:8080").bind().await;
-    let service = Service::new(router).hoop(cors);
+    let service = Service::new(router);
 
     Server::new(acceptor).serve(service).await;
 }
