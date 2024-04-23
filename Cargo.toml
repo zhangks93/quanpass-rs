@@ -32,3 +32,5 @@ salvo = {version = "0.66", features=["cors"] }
 tokio = { version = "1", features = ["macros"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+lazy_static = "1.4.0"
+rusqlite = { version = "0.31.0", features = ["bundled"] }

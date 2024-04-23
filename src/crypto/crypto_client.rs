@@ -29,10 +29,13 @@ impl CryptoClient {
         order_parameters.insert("type".into(), "LIMIT".to_owned());
         order_parameters.insert("price".into(), price.to_string());
         let request = self.binance_client.build_signed_request(order_parameters);
-        return self
+        match self
             .binance_client
             .post_signed("/api/v3/order", Some(request))
-            .unwrap();
+        {
+            Ok(_transaction) => return _transaction,
+            Err(_err) => return Transaction::default(),
+        }
     }
 
     pub fn limit_sell(&self, symbol: &str, quantity: f32, price: f64) -> Transaction {
@@ -45,10 +48,13 @@ impl CryptoClient {
         order_parameters.insert("type".into(), "LIMIT".to_owned());
         order_parameters.insert("price".into(), price.to_string());
         let request = self.binance_client.build_signed_request(order_parameters);
-        return self
+        match self
             .binance_client
             .post_signed("/api/v3/order", Some(request))
-            .unwrap();
+        {
+            Ok(_transaction) => return _transaction,
+            Err(_err) => return Transaction::default(),
+        }
     }
 
     pub fn open_orders(&self) -> Vec<Order> {
@@ -95,11 +101,16 @@ impl CryptoClient {
             parameters.insert("endTime".into(), format!("{}", et));
         }
         let request = self.binance_client.build_request(parameters);
-        let data: Vec<Vec<Value>> = self.binance_client.get("/api/v3/klines", Some(request)).unwrap();
+        let data: Vec<Vec<Value>> = self
+            .binance_client
+            .get("/api/v3/klines", Some(request))
+            .unwrap();
 
-        return data.iter()
-                .map(|row| row.try_into())
-                .collect::<Result<Vec<Kline>, _>>().unwrap();
+        return data
+            .iter()
+            .map(|row| row.try_into())
+            .collect::<Result<Vec<Kline>, _>>()
+            .unwrap();
     }
 }
 
@@ -132,8 +143,11 @@ mod tests {
     #[test]
     fn test_get_klines() {
         let client = CryptoClient::new();
-        client.klines("GALAFDUSD", "1d", Some(30), None, None).iter().for_each(|kline| {
-            println!("{:?}", kline);
-        })
+        client
+            .klines("GALAFDUSD", "1d", Some(30), None, None)
+            .iter()
+            .for_each(|kline| {
+                println!("{:?}", kline);
+            })
     }
 }

@@ -31,7 +31,7 @@ pub struct Order {
     pub orig_quote_order_qty: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Transaction {
     pub symbol: String,
