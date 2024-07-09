@@ -41,6 +41,23 @@ impl BinanceClient {
         }
     }
 
+    pub fn new_with_host(host: &str) -> Self {
+        BinanceClient {
+            api_key: String::from(
+                "uzmfZmBb2jlmCNi5O9hp27o0CJxa5v42Lec3kVvFkXSPOUl9r8qa3CEFBhAkQThP",
+            ),
+            secret_key: String::from(
+                "LJjVjovJ1oaGowqPE0dRQBFIH9NIxI14Fsq4RTi3NWjFWHQf3yZaEMnkqywW8FIB",
+            ),
+            inner_client: reqwest::blocking::Client::builder()
+                .pool_idle_timeout(None)
+                .build()
+                .unwrap(),
+            host: host.to_string(),
+            // ... initialize other fields ...
+        }
+    }
+
     fn build_headers(&self, content_type: bool) -> Result<HeaderMap, anyhow::Error> {
         let mut custom_headers = HeaderMap::new();
 
