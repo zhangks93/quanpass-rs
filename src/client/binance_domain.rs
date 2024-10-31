@@ -3,6 +3,8 @@ use std::io::ErrorKind;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
 
+use derive_builder::Builder;
+
 use crate::util::json_util::string_or_float;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -56,7 +58,7 @@ pub struct Transaction {
     pub side: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Builder, Default)]
 pub struct CurrentPrice {
     pub symbol: String,
     #[serde(with = "string_or_float")]
@@ -96,17 +98,10 @@ impl TryFrom<&Vec<Value>> for Kline {
             close: from_value(get_value(row, 4).unwrap()).unwrap(),
             volume: from_value(get_value(row, 5).unwrap()).unwrap(),
             close_time: from_value(get_value(row, 6).unwrap()).unwrap(),
-            quote_asset_volume: from_value(get_value(row, 7).unwrap())
-                .unwrap(),
+            quote_asset_volume: from_value(get_value(row, 7).unwrap()).unwrap(),
             number_of_trades: from_value(get_value(row, 8).unwrap()).unwrap(),
-            taker_buy_base_asset_volume: from_value(
-                get_value(row, 9).unwrap(),
-            )
-            .unwrap(),
-            taker_buy_quote_asset_volume: from_value(
-                get_value(row, 10).unwrap(),
-            )
-            .unwrap(),
+            taker_buy_base_asset_volume: from_value(get_value(row, 9).unwrap()).unwrap(),
+            taker_buy_quote_asset_volume: from_value(get_value(row, 10).unwrap()).unwrap(),
         })
     }
 }

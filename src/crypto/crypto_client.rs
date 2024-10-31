@@ -19,7 +19,13 @@ impl CryptoClient {
         }
     }
 
-    pub fn limit_buy(&self, symbol: &str, quantity: f32, price: f64) -> Transaction {
+    pub fn limit_buy(
+        &self,
+        symbol: &str,
+        quantity: f32,
+        price: f64,
+        client_order_id: &str,
+    ) -> Transaction {
         let mut order_parameters: BTreeMap<String, String> = BTreeMap::new();
 
         order_parameters.insert("symbol".into(), symbol.to_owned());
@@ -28,6 +34,7 @@ impl CryptoClient {
         order_parameters.insert("quantity".into(), quantity.to_string());
         order_parameters.insert("type".into(), "LIMIT".to_owned());
         order_parameters.insert("price".into(), price.to_string());
+        order_parameters.insert("newClientOrderId".into(), client_order_id.to_owned());
         let request = self.binance_client.build_signed_request(order_parameters);
         match self
             .binance_client
@@ -38,7 +45,13 @@ impl CryptoClient {
         }
     }
 
-    pub fn limit_sell(&self, symbol: &str, quantity: f32, price: f64) -> Transaction {
+    pub fn limit_sell(
+        &self,
+        symbol: &str,
+        quantity: f32,
+        price: f64,
+        client_order_id: &str,
+    ) -> Transaction {
         let mut order_parameters: BTreeMap<String, String> = BTreeMap::new();
 
         order_parameters.insert("symbol".into(), symbol.to_owned());
@@ -47,6 +60,7 @@ impl CryptoClient {
         order_parameters.insert("quantity".into(), quantity.to_string());
         order_parameters.insert("type".into(), "LIMIT".to_owned());
         order_parameters.insert("price".into(), price.to_string());
+        order_parameters.insert("newClientOrderId".into(), client_order_id.to_owned());
         let request = self.binance_client.build_signed_request(order_parameters);
         match self
             .binance_client
@@ -72,10 +86,18 @@ impl CryptoClient {
         let mut parameters: BTreeMap<String, String> = BTreeMap::new();
         parameters.insert("symbol".into(), symbol.into());
         let request = self.binance_client.build_request(parameters);
-        return self
+        match self
             .binance_client
             .get("/api/v3/ticker/price", Some(request))
-            .unwrap();
+        {
+            Ok(_price) => return _price,
+            Err(_err) => {
+                return CurrentPrice {
+                    symbol: symbol.to_owned(),
+                    price: 0.0,
+                }
+            }
+        }
     }
 
     pub fn klines(
@@ -116,13 +138,17 @@ impl CryptoClient {
 
 #[cfg(test)]
 mod tests {
+    use crate::util::string_util::generate_random_id;
+
     use super::CryptoClient;
 
     #[test]
     fn test_limit_sell_and_limit_buy() {
         let client = CryptoClient::new();
-        client.limit_buy("CFXTUSD", 20.0, 0.4);
-        client.limit_sell("CFXTUSD", 20.0, 0.55);
+        let transaction_buy = client.limit_buy("MANTAFDUSD", 10.0, 0.69, &generate_random_id());
+        let transaction_sell = client.limit_sell("MANTAFDUSD", 10.0, 0.72, &generate_random_id());
+        println!("{:?}", transaction_buy);
+        println!("{:?}", transaction_sell);
     }
 
     #[test]

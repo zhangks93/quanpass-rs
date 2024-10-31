@@ -15,8 +15,8 @@ pub fn round(x: f64, decimals: u32) -> f64 {
     (x * y).round() / y
 }
 
-pub fn rand() -> f64 {
-    thread_rng().gen::<f64>()
+pub fn get_random_number() -> u32 {
+    thread_rng().gen_range(1..=1_000_000)
 }
 
 pub fn smart_quantity(order_size: f64, price: f64) -> f64 {
@@ -35,7 +35,7 @@ pub fn smart_quantity(order_size: f64, price: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::util::number_util::{get_precision, rand, round};
+    use crate::util::number_util::{get_precision, get_random_number, round};
 
     #[test]
     fn test_get_precision() {
@@ -60,6 +60,6 @@ mod tests {
 
     #[test]
     fn test_rand() {
-        println!("{}", (rand() * 5.0 + 2.0) / 100.0);
+        println!("{}", (get_random_number() as f64 * 5.0 + 2.0) / 100.0);
     }
 }
