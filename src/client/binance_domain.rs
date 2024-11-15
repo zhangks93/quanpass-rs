@@ -7,6 +7,7 @@ use derive_builder::Builder;
 
 use crate::util::json_util::string_or_float;
 
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
@@ -58,11 +59,35 @@ pub struct Transaction {
     pub side: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FutureTransaction {
+    order_id: u64,
+    client_order_id: String,
+    symbol: String,
+    status: String,
+    r#type: String,
+    side: String
+
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Builder, Default)]
 pub struct CurrentPrice {
     pub symbol: String,
     #[serde(with = "string_or_float")]
     pub price: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Ticker {
+    pub symbol: String,
+  #[serde(with = "string_or_float")]
+  pub prev_close_price: f64,
+  #[serde(with = "string_or_float")]
+  pub price_change_percent: f64,
+  #[serde(with = "string_or_float")]
+  pub quote_volume: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

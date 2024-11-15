@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::client::{
     binance_client::BinanceClient,
-    binance_domain::{CurrentPrice, Kline, Order, Transaction},
+    binance_domain::{CurrentPrice, Kline, Order, Ticker, Transaction},
 };
 
 #[derive(Clone)]
@@ -100,6 +100,20 @@ impl CryptoClient {
         }
     }
 
+    pub fn tickers(&self, ) -> Vec<Ticker> {
+        let parameters: BTreeMap<String, String> = BTreeMap::new();
+        let request = self.binance_client.build_request(parameters);
+        match self
+            .binance_client
+            .get("/api/v3/ticker/24hr", Some(request))
+        {
+            Ok(_tickers) => return _tickers,
+            Err(_err) => 
+                return Vec::new()
+        }
+        
+    }
+
     pub fn klines(
         &self,
         symbol: &str,
@@ -174,6 +188,18 @@ mod tests {
             .iter()
             .for_each(|kline| {
                 println!("{:?}", kline);
+            })
+    }
+
+    #[test]
+    fn test_get_tickers() {
+        let client = CryptoClient::new();
+        client
+            .tickers()
+            .iter()
+            .filter(|ticker| ticker.symbol.contains("FDUSD"))
+            .for_each(|ticker| {
+                println!("{:?}", ticker);
             })
     }
 }

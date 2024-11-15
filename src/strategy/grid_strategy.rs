@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde_json::{Map, Value};
+
 use crate::strategy::strategy::Strategy;
 use crate::crypto::crypto_client::CryptoClient;
 use crate::util::number_util::{get_precision, round};
@@ -16,7 +18,7 @@ impl GridStrategy {
     pub fn new(params: HashMap<String, String>) -> GridStrategy {
         GridStrategy {
             id: generate_random_id(),
-            name: String::from("现货网格策略"),
+            name: String::from("Grid"),
             crypto_client: CryptoClient::new(),
             params: params,
         }
@@ -37,6 +39,26 @@ impl Clone for GridStrategy {
 impl Strategy for GridStrategy {
     fn clone_box(&self) -> Box<dyn Strategy> {
         Box::new((*self).clone())
+    }
+
+    fn params(&self) -> HashMap<String, String> {
+        self.params.clone()
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn to_json(&self) -> Map<String, Value> {
+        let mut map = Map::new();
+        map.insert("name".to_string(), Value::String(self.name.clone()));
+        
+        let mut params_map = Map::new();
+        for (key, value) in &self.params {
+            params_map.insert(key.clone(), Value::String(value.clone()));
+        }
+        map.insert("params".to_string(), Value::Object(params_map));
+        map
     }
 
     fn excute(&self) {
@@ -78,35 +100,11 @@ impl Strategy for GridStrategy {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap};
-
-    use binance::{api::Binance, market::Market};
+    use std::collections::HashMap;
 
     use crate::strategy::strategy::Strategy;
 
     use super::GridStrategy;
-
-    #[test]
-    fn test_get_klines() {
-        let market: Market = Binance::new(None, None);
-       
-        match market.get_klines("GALAFDUSD", "1d", 30, None, None) {
-            Ok(klines) => match klines {
-                binance::model::KlineSummaries::AllKlineSummaries(klines) => {
-                    for kilne in &klines {
-                        println!(
-                            "Open: {}, High: {}, Low: {}, Close: {}",
-                            kilne.clone().open,
-                            kilne.clone().high,
-                            kilne.clone().low,
-                            kilne.clone().close
-                        )
-                    }
-                }
-            },
-            Err(e) => println!("Error: {}", e),
-        }
-    }
 
     #[test]
     fn test_excute() {
@@ -118,4 +116,6 @@ mod tests {
         let strategy = GridStrategy::new(parameters);
         strategy.excute();
     }
+
+    
 }

@@ -11,10 +11,14 @@ use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
     StatusCode,
 };
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sha2::Sha256;
 
-
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct ServerTime {
+    server_time: i64,
+}
 
 #[derive(Clone)]
 pub struct BinanceClient {
@@ -97,6 +101,24 @@ impl BinanceClient {
         return self.build_request(parameters);
     }
 
+    pub fn build_future_signed_request(
+        &self,
+        parameters: BTreeMap<String, String>,
+        recv_window: u64,
+    ) -> String {
+        {
+            let mut parameters = parameters;
+            if recv_window > 0 {
+                parameters.insert("recvWindow".into(), recv_window.to_string());
+            }
+            let server_time: ServerTime = self.get("/fapi/v1/time", None).unwrap();
+            let timestamp = server_time.server_time as u64;
+
+            parameters.insert("timestamp".into(), timestamp.to_string());
+            self.build_request(parameters)
+        }
+    }
+
     fn sign_request(&self, endpoint: &str, request: Option<String>) -> String {
         if let Some(request) = request {
             let mut signed_key =
@@ -126,7 +148,11 @@ impl BinanceClient {
                 bail!("Unauthorized");
             }
             s => {
-                bail!(format!("Received response: {:?}", s));
+                bail!(format!(
+                    "Code:{:?}, Received mesaage: {:?}",
+                    s,
+                    response.text()
+                ));
             }
         }
     }
